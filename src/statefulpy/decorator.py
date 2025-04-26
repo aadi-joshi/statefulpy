@@ -146,4 +146,5 @@ _flush_all_state = _cleanup_stateful_functions
 
 class _Wrapped:
     state: Any  # Add state attribute
-    # ...existing code...
+
+stateful = stateful_decorator  # <-- ensures 'stateful' is imported from here
