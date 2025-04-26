@@ -1,6 +1,7 @@
 # StatefulPy
 
-**StatefulPy** provides transparent, persistent state management for regular Python functions.
+**StatefulPy** provides transparent, persistent state management for regular Python functions.  
+**MIGHT NOT BE FULLY FUNCTIONAL YET, STILL BEING WORKED ON**
 
 ---
 
