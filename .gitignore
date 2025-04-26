@@ -1,0 +1,67 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+coverage.xml
+*.cover
+.pytest_cache/
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Sphinx documentation
+docs/_build/
+
+# SQLite database files
+*.db
+*.db-*
+*.sqlite3
+*.sqlite3-*
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Additional caches and build artifacts to ignore for packaging and CI
+.mypy_cache/
+.pytype/
+pip-wheel-metadata/
+.nox/
+
+# Markdown files: only push essential ones
+*.md
+!README.md
+!CONTRIBUTING.md
+!CHANGELOG.md
+!SECURITY.md
+
+# Non-essential markdown files and publishing instructions
+PUBLISHING.md
+DEVELOPER_GUIDE.md
+ISSUE_TEMPLATE.md
+PULL_REQUEST_TEMPLATE.md
