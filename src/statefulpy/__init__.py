@@ -5,7 +5,7 @@ This library provides decorators and utilities to automatically persist and
 recover function-internal state like counters, caches, and partial results.
 """
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 
 # Import core components to make them available at the package level
 from statefulpy.decorator import stateful, _flush_all_state

@@ -45,85 +45,83 @@ class StateProxy:
     def update_from_dict(self, new_state):
         object.__setattr__(self, "_state_dict", new_state or {})
 
+    def __contains__(self, key):
+        return key in self.get_state_dict()
+    
+    def __getitem__(self, key):
+        return self.get_state_dict()[key]
+    
+    def __setitem__(self, key, value):
+        self.get_state_dict()[key] = value
+    
+    def __delitem__(self, key):
+        del self.get_state_dict()[key]
+    
+    def __iter__(self):
+        return iter(self.get_state_dict())
+
 def stateful_decorator(
     backend=None, 
     serializer=None, 
     reentrant=False, 
     save_on_exit=True, 
-    cache=True
+    cache=True, 
+    **backend_kwargs  # <-- Added to capture extra arguments such as db_path, function_id, etc.
 ):
     """
     Decorator that adds persistent state to a function.
     
     Args:
         backend: Name of the backend to use ('sqlite' or 'redis')
-        **backend_kwargs: Additional arguments for the backend
-        
+        **backend_kwargs: Additional backend parameters (e.g., db_path)
+    
     Returns:
         Decorated function with persistent state
     """
-    # Ensure default serializer is secure by using JSON if not explicitly provided
     if serializer is None:
         serializer = "json"
     
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
-        # Determine key using module and function name (if not a local function)
-        if "<locals>" in func.__qualname__:
-            key = f"{func.__module__}.{inspect.stack()[1].function}"
+        # Allow override of the state key using a 'function_id' kwarg
+        if 'function_id' in backend_kwargs:
+            key = backend_kwargs.pop('function_id')
         else:
-            key = f"{func.__module__}.{func.__name__}"
+            if "<locals>" in func.__qualname__:
+                key = f"{func.__module__}.{inspect.stack()[1].function}"
+            else:
+                key = f"{func.__module__}.{func.__name__}"
         
-        # Initialize backend
-        backend_instance = get_backend(backend, serializer=serializer)
+        # Initialize backend with extra keyword arguments
+        backend_instance = get_backend(backend, serializer=serializer, **backend_kwargs)
         
-        # Load existing state from backend
         state_dict = backend_instance.load_state(key) or {}
         state_proxy = StateProxy(state_dict)
         
-        # Track stateful functions
         _stateful_functions[key] = (func, backend_instance)
         
         @functools.wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            # Acquire lock first to avoid race conditions
             backend_instance.acquire_lock(key)
             try:
-                # Now that lock is held, refresh state from backend
                 fresh_state = backend_instance.load_state(key)
                 if fresh_state:
                     state_proxy.update_from_dict(fresh_state)
-                    # Sync persistent state into wrapper attributes if not set.
                     for k, v in state_proxy.get_state_dict().items():
                         if not hasattr(wrapper, k):
                             setattr(wrapper, k, v)
-                
-                # Call the function with the state
                 result = func(*args, **kwargs)
-                
-                # Save state; ensure wrapper.state exists
                 if not hasattr(wrapper, "state"):
                     wrapper.state = state_proxy
-                
-                # After call, if the function attribute 'count' exists, store it back
-                # (extend this logic as needed for additional values)
-                if hasattr(wrapper, 'count'):
-                    state_proxy.update_from_dict({'count': getattr(wrapper, 'count')})
-                
-                # Save updated state back to the backend
                 backend_instance.save_state(key, state_proxy.get_state_dict())
                 logger.debug(f"State for {key} updated: {state_proxy.get_state_dict()}")
-                
                 return result
             finally:
-                # Always release the lock, even if an exception occurs
                 backend_instance.release_lock(key)
         
-        # Ensure the wrapper is state‐aware
         if not hasattr(wrapper, "state"):
             wrapper.state = state_proxy
         
         return wrapper
-        
     return decorator
 
 # Register cleanup function
